@@ -27,7 +27,7 @@ public class ConsoleDemoTests
         try
         {
             Console.SetOut(capturedOutput);
-            entryPoint.Invoke(null, new object[] { Array.Empty<string>() });
+            entryPoint.Invoke(null, new object[] { new string[] { "--demo" } });
         }
         finally
         {
