@@ -9,6 +9,10 @@ container.RegisterSingleton<InventoryService>(CreateInventoryService);
 
 InventoryService inventory = container.Resolve<InventoryService>();
 
+Console.WriteLine("1. Пустой инвентарь");
+PrintInventoryReport(inventory);
+
+Console.WriteLine("2. Приём транспорта и вещей");
 Bicycle cityBicycle = new Bicycle(
     "Городской велосипед", 1, 8, isOperational: true);
 
@@ -28,24 +32,84 @@ ChargingStation station = new ChargingStation(
 Console.WriteLine($"Электровелосипед принят: {inventory.AddItem(electricBicycle)}");
 Console.WriteLine($"Шлем принят: {inventory.AddItem(helmet)}");
 Console.WriteLine($"Станция принята: {inventory.AddItem(station)}");
-Console.WriteLine();
-Console.WriteLine($"Предметов в инвентаре: {inventory.ItemCount}");
-Console.WriteLine(
-    $"Потребление за сутки: {inventory.GetTotalDailyEnergyConsumption()} кВт·ч");
+PrintInventoryReport(inventory);
 
-Console.WriteLine("Весь инвентарь:");
+Console.WriteLine("3. Граница для новичков и нулевое потребление");
+Bicycle ratingFive = new Bicycle("Велосипед с удобством 5", 6, 5, true);
+ElectricBicycle ratingSix = new ElectricBicycle(
+    "Электровелосипед с удобством 6", 7, 6, 0, true);
 
-foreach (IInventoryItem item in inventory.GetAllItems())
+Console.WriteLine($"Велосипед с удобством 5 принят: {inventory.AddVehicle(ratingFive)}");
+Console.WriteLine($"Электровелосипед с удобством 6 принят: {inventory.AddVehicle(ratingSix)}");
+PrintInventoryReport(inventory);
+
+Console.WriteLine("4. Недопустимое удобство для новичков");
+foreach (int rating in new int[] { 0, 11 })
 {
-    Console.WriteLine($"№{item.Id}: {item.Name}");
+    try
+    {
+        Bicycle invalidBicycle = new Bicycle("Ошибка удобства", 8, rating, true);
+        Console.WriteLine($"Велосипед принят: {inventory.AddVehicle(invalidBicycle)}");
+    }
+    catch (ArgumentOutOfRangeException exception)
+    {
+        Console.WriteLine($"Удобство {rating}: {exception.Message}");
+    }
 }
 
-Console.WriteLine("Транспорт для новичков:");
-
-foreach (Vehicle vehicle in inventory.GetBeginnerFriendlyVehicles())
+Console.WriteLine();
+Console.WriteLine("5. Недопустимое потребление энергии");
+foreach (double energy in new double[]
+         { -1.0, double.NaN, double.PositiveInfinity, double.NegativeInfinity })
 {
+    try
+    {
+        ElectricBicycle invalidBicycle = new ElectricBicycle(
+            "Ошибка потребления", 8, 8, energy, true);
+        Console.WriteLine($"Электровелосипед принят: {inventory.AddItem(invalidBicycle)}");
+    }
+    catch (ArgumentOutOfRangeException exception)
+    {
+        Console.WriteLine($"Потребление {energy}: {exception.Message}");
+    }
+}
+
+Console.WriteLine();
+Console.WriteLine("6. Инвентарь после отклонения некорректных данных");
+PrintInventoryReport(inventory);
+
+static void PrintInventoryReport(InventoryService inventory)
+{
+    Console.WriteLine($"Предметов в инвентаре: {inventory.ItemCount}");
     Console.WriteLine(
-        $"№{vehicle.Id}: {vehicle.Name}, удобство: {vehicle.BeginnerFriendliness}");
+        $"Потребление за сутки: {inventory.GetTotalDailyEnergyConsumption()} кВт·ч");
+
+    List<IInventoryItem> items = inventory.GetAllItems();
+    Console.WriteLine("Весь инвентарь:");
+    if (items.Count == 0)
+    {
+        Console.WriteLine("Инвентарь пуст.");
+    }
+
+    foreach (IInventoryItem item in items)
+    {
+        Console.WriteLine($"№{item.Id}: {item.Name}");
+    }
+
+    List<Vehicle> beginnerVehicles = inventory.GetBeginnerFriendlyVehicles();
+    Console.WriteLine("Транспорт для новичков:");
+    if (beginnerVehicles.Count == 0)
+    {
+        Console.WriteLine("Подходящего транспорта нет.");
+    }
+
+    foreach (Vehicle vehicle in beginnerVehicles)
+    {
+        Console.WriteLine(
+            $"№{vehicle.Id}: {vehicle.Name}, удобство: {vehicle.BeginnerFriendliness}");
+    }
+
+    Console.WriteLine();
 }
 
 static IServiceCenter CreateServiceCenter(SimpleContainer container)
